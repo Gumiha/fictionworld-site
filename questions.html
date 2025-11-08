@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choose a Question</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Georgia', serif;
+      background: linear-gradient(to bottom, #9570D0, #1A587E);
+      color: white;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 36px;
+      margin-bottom: 50px;
+      text-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .clouds {
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      align-items: center;
+      animation: float 6s ease-in-out infinite alternate;
+    }
+
+    /* === Облака === */
+    .cloud {
+      background: white;
+      color: #1A587E;
+      font-weight: 500;
+      font-size: 22px;
+      padding: 25px 50px;
+      border-radius: 80px;
+      box-shadow: 0px 10px 25px rgba(0,0,0,0.15);
+      position: relative;
+      cursor: pointer;
+      transition: all 0.4s ease;
+    }
+
+    .cloud::before,
+    .cloud::after {
+      content: '';
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      z-index: -1;
+    }
+
+    /* добавляем "пухлость" облака */
+    .cloud::before {
+      width: 60px;
+      height: 60px;
+      top: -30px;
+      left: 40px;
+      box-shadow: 40px 10px 0 0 white;
+    }
+
+    .cloud::after {
+      width: 80px;
+      height: 80px;
+      bottom: -30px;
+      right: 30px;
+    }
+
+    .cloud:hover {
+      transform: scale(1.05);
+      box-shadow: 0px 15px 30px rgba(0,0,0,0.25);
+    }
+
+    @keyframes float {
+      from { transform: translateY(0px); }
+      to { transform: translateY(10px); }
+    }
+
+    .read-btn {
+      background: rgba(255, 255, 255, 0.25);
+      border: none;
+      color: white;
+      padding: 12px 30px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 60px;
+    }
+
+    .read-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    /* === Popup === */
+    .popup-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .popup {
+      background: white;
+      color: #1A587E;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 400px;
+      width: 85%;
+      text-align: center;
+      box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .popup h3 {
+      margin-bottom: 15px;
+      font-size: 22px;
+    }
+
+    .popup textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-family: 'Georgia', serif;
+      resize: none;
+    }
+
+    .popup button {
+      margin-top: 15px;
+      background: #70ACD0;
+      border: none;
+      color: white;
+      padding: 10px 25px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .popup button:hover {
+      background: #5d97bb;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: scale(0.95);}
+      to {opacity: 1; transform: scale(1);}
+    }
+  </style>
+  
+  </head>
+<body>
+
+  <h1>Choose a question to answer</h1>
+
+  <div class="clouds">
+    <div class="cloud" onclick="openPopup('What if…')">What if…</div>
+    <div class="cloud" onclick="openPopup('What would happen if…')">What would happen if…</div>
+    <div class="cloud" onclick="openPopup('What might have been…')">What might have been…</div>
+  </div>
+
+  <button class="read-btn" onclick="window.location.href='forum.html'">Read others’ stories</button>
+
+  <div class="popup-bg" id="popupBg">
+    <div class="popup">
+      <h3 id="popupQuestion"></h3>
+      <textarea id="userAnswer" placeholder="Write your answer here..."></textarea>
+      <br>
+      <button onclick="sendAnswer()">Send</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  
+  <script>
+    // Объявляем глобально, чтобы была доступна в onclick="..."
+    window.selectedQuestion = "";
+
+    function openPopup(question) {
+      window.selectedQuestion = question;
+      document.getElementById("popupQuestion").innerText = question;
+      document.getElementById("userAnswer").value = ""; // Очистка при открытии
+      document.getElementById("popupBg").style.display = "flex";
+    }
+    
+    function closePopup() {
+      document.getElementById("popupBg").style.display = "none";
+    }
+    
+    // *** ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТПРАВКИ: Использует loadPosts/savePosts ***
+    function sendAnswer() {
+      const text = document.getElementById("userAnswer").value.trim();
+      if (text.length < 5) return alert("Пожалуйста, напишите более развернутый ответ (минимум 5 символов).");
+      
+      // currentUser, loadPosts, savePosts доступны из script.js
+      const user = currentUser; 
+
+      const newPost = {
+          // *** Уникальный ID на основе времени, как в вашем LocalStorage скрипте ***
+          id: Date.now().toString(), 
+          question: selectedQuestion,
+          answer: text,
+          timestamp: Date.now(),
+          user: user,
+          replies: [] // Инициализируем массив для ответов
+      };
+      
+      const posts = loadPosts();
+      posts.push(newPost);
+      savePosts(posts); // Сохраняем обратно в LocalStorage
+
+      // Очищаем и закрываем
+      document.getElementById("userAnswer").value = "";
+      closePopup();
+      
+      // Перенаправляем на страницу форума
+      window.location.href = 'forum.html';
+    }
+
+    // Назначаем глобальные функции
+    window.openPopup = openPopup;
+    window.closePopup = closePopup;
+    window.sendAnswer = sendAnswer; // Делаем sendAnswer глобальной
+
+    document.getElementById("popupBg").addEventListener("click", (e) => {
+      if (e.target.id === "popupBg") closePopup();
+    });
+  </script>
+</body>
+</html>

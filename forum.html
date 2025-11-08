@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forum</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Georgia', serif;
+      background: linear-gradient(to bottom, #70ACD0, #1A587E);
+      color: white;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 36px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .filters {
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 16px;
+    }
+
+    .filters span {
+      margin: 0 15px;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: all 0.3s ease;
+    }
+
+    .filters span:hover {
+      color: #FFD700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 150px;
+      position: relative;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .card-text {
+      text-align: center;
+      font-size: 16px;
+      margin-bottom: 15px;
+      word-wrap: break-word;
+    }
+    
+    .card-text strong {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 18px;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      align-items: center;
+    }
+
+    .card-footer span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+  </style>
+  
+  </head>
+<body>
+  <div class="container">
+    <h1>Read and respond to other imaginations</h1>
+    <div class="filters">
+      <span onclick="filterCards('newest')">newest</span>
+      <span onclick="filterCards('most')">most replied</span>
+      <span onclick="filterCards('random')">random</span>
+    </div>
+    <div class="grid" id="cardGrid">
+      </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    let data = []; // Глобальный массив для хранения постов
+
+    /**
+     * Загружает и отображает посты, применяя сортировку.
+     */
+    function loadCards(sortType = 'newest') {
+      const grid = document.getElementById("cardGrid");
+      grid.innerHTML = '<p style="text-align:center; margin-top: 50px;">Loading posts...</p>'; 
+      
+      // *** ИСПОЛЬЗУЕМ loadPosts() из script.js ***
+      data = loadPosts(); 
+      
+      // Применяем сортировку
+      if (sortType === 'newest') {
+        // Сортировка по timestamp (самые новые вверху)
+        data.sort((a,b) => b.timestamp - a.timestamp);
+      } else if (sortType === 'most') {
+        // Сортируем по количеству ответов (replies)
+        data.sort((a,b) => (b.replies ? b.replies.length : 0) - (a.replies ? a.replies.length : 0));
+      } else if (sortType === 'random') {
+        data.sort(() => Math.random() - 0.5);
+      }
+      
+      grid.innerHTML = "";
+      
+      // 🚨 Сообщение "НЕТ ОТВЕТОВ" 🚨
+      if (data.length === 0) {
+        grid.innerHTML = '<p style="text-align:center; margin-top: 50px;">There are no answers yet. Be the first on the <a href="questions.html" style="color:#FFD700;">"Choose a question"</a> page!</p>';
+        return;
+      }
+      
+      data.forEach(post => {
+        const replyCount = post.replies ? post.replies.length : 0;
+        const shortAnswer = post.answer.length > 120 ? post.answer.substring(0, 120) + '...' : post.answer;
+        
+        const div = document.createElement("div");
+        div.className = "card";
+        // Клик по карточке ведет на thread.html с ID
+        div.onclick = () => window.location.href = `thread.html?id=${post.id}`;
+        
+        div.innerHTML = `
+          <div class="card-text"><strong>${post.question}</strong><br>${shortAnswer}</div>
+          <div class="card-footer">
+            <span>💬 ${replyCount} responses</span>
+            <span style="cursor:pointer;" onclick="event.stopPropagation(); window.location.href = 'thread.html?id=${post.id}'">→ View Thread</span>
+          </div>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    // Эта функция вызывается из HTML-кнопок фильтров
+    function filterCards(type) {
+      loadCards(type);
+    }
+    
+    window.onload = () => loadCards('newest');
+    // Делаем filterCards доступной глобально для HTML-кнопок
+    window.filterCards = filterCards;
+  </script>
+</body>
+</html>
