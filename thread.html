@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thread</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Georgia', serif;
+      background: linear-gradient(to bottom, #D070CE, #1A587E);
+      color: white;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .subheader {
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 16px;
+      color: #f0f0f0;
+    }
+
+    .post-block {
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 25px;
+      margin-bottom: 40px;
+      text-align: center;
+      font-size: 20px;
+      box-shadow: 0px 5px 20px rgba(0,0,0,0.3);
+    }
+    
+    .post-block p {
+        margin: 10px 0;
+    }
+
+    .responses {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .back-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+    .back-btn:hover {
+        background: rgba(255, 255, 255, 0.35);
+    }
+
+    .add-reply-btn {
+      display: block;
+      width: 250px;
+      margin: 40px auto;
+      background: #D070CE;
+      border: none;
+      color: white;
+      padding: 12px 30px;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .add-reply-btn:hover {
+        background: #b05db3;
+    }
+
+    .response-card {
+      background: rgba(255,255,255,0.15);
+      padding: 15px 20px;
+      border-radius: 15px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .response-card:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    .response-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .response-footer span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* === Popup === */
+    .popup-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .popup {
+      background: white;
+      color: #1A587E;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 400px;
+      width: 85%;
+      text-align: center;
+      box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .popup h3 {
+      margin-bottom: 15px;
+      font-size: 22px;
+    }
+
+    .popup textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-family: 'Georgia', serif;
+      resize: none;
+    }
+
+    .popup button {
+      margin-top: 15px;
+      background: #D070CE;
+      border: none;
+      color: white;
+      padding: 10px 25px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .popup button:hover {
+      background: #b05db3;
+    }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+</head>
+<body>
+  <div class="container">
+    <button class="back-btn" onclick="window.location.href='forum.html'">← Back to Forum</button>
+
+    <h1>THREAD</h1>
+    <div class="subheader">Read and reply to this imagination</div>
+
+    <div class="post-block" id="postBlock">
+      <p>Loading...</p>
+    </div>
+
+    <button class="add-reply-btn" onclick="openReply()">Add your answer</button>
+
+    <div class="responses" id="responses">
+      </div>
+  </div>
+
+  <div class="popup-bg" id="popupBg">
+    <div class="popup">
+      <h3>Add your reply</h3>
+      <textarea id="replyText" placeholder="Write your reply..."></textarea>
+      <br>
+      <button onclick="submitReply()">Submit</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script type="module">
+    import { loadPosts, updatePost, initFirebase, isAdmin, deletePost, currentUser } from "./script.js";
+    
+    let currentPost = null;
+    let currentPostId = new URLSearchParams(window.location.search).get('id');
+
+    // Инициализация Firebase
+    if (typeof initFirebase !== 'undefined') initFirebase();
+    
+    // Делаем функции модерации глобальными, чтобы их можно было вызвать из HTML
+    window.deletePost = deletePost;
+    window.currentUser = currentUser; // Также делаем currentUser глобальным
+    window.updatePost_F = updatePost; // Глобальный доступ к функции обновления
+
+    // Функция для удаления ответа (модерация)
+    window.deleteReply = function(postId, replyTimestamp) {
+        if (!isAdmin()) {
+            alert("Нет прав администратора для удаления ответа.");
+            return;
+        }
+        if (!confirm("ВЫ УВЕРЕНЫ? Удаление ответа необратимо.")) {
+            return;
+        }
+        
+        // 1. Фильтруем ответы текущего поста
+        currentPost.replies = currentPost.replies.filter(
+            // Сравниваем метки времени как строки для надежности
+            r => r.timestamp.toString() !== replyTimestamp.toString() 
+        );
+        
+        // 2. Обновляем пост на сервере
+        window.updatePost_F(postId, currentPost).then(() => {
+            alert("Ответ удален с сервера!");
+            window.loadThread(); // Перезагружаем страницу
+        }).catch(e => {
+            console.error(e);
+            alert("Ошибка при удалении и обновлении поста.");
+        });
+    }
+
+    async function loadThread() {
+      // 1. Получаем все посты с сервера
+      const posts = await loadPosts();
+      
+      // 2. Находим нужный пост по ID
+      currentPost = posts.find(p => p.id === currentPostId);
+
+      if (!currentPost) {
+        document.getElementById("postBlock").innerHTML = '<p>Post not found. Redirecting...</p>';
+        setTimeout(() => window.location.href = 'forum.html', 2000);
+        return;
+      }
+
+      // 3. Рендерим основной пост
+      const postTimestamp = currentPost.timestamp; 
+        
+      const date = new Date(postTimestamp).toLocaleDateString();
+      const time = new Date(postTimestamp).toLocaleTimeString();
+      const replyCount = currentPost.replies.length;
+      
+      const adminDeletePostBtn = isAdmin() 
+          ? `<button onclick="deletePost('${currentPostId}')" style="background:#cc0000; color:white; border:none; padding: 5px 10px; border-radius:5px; margin-left:10px; cursor:pointer;">Delete Post</button>` 
+          : '';
+
+      document.getElementById("postBlock").innerHTML = `
+        <p style="font-size:24px;"><strong>${currentPost.question}</strong></p>
+        <p>${currentPost.answer}</p>
+        <p style="font-size:14px; color:#f0f0f0;">- ${currentPost.user} | ${date} ${time} | ${replyCount} answers ${adminDeletePostBtn}</p>
+      `;
+
+      // 4. Рендерим ответы
+      const responsesDiv = document.getElementById("responses");
+      responsesDiv.innerHTML = '';
+      
+      // Сортируем ответы по времени (старые ответы вверху)
+      currentPost.replies.sort((a, b) => a.timestamp - b.timestamp);
+
+      currentPost.replies.forEach(resp => {
+        const dateResp = new Date(resp.timestamp).toLocaleDateString();
+        const timeResp = new Date(resp.timestamp).toLocaleTimeString();
+        
+        const adminDeleteReplyBtn = isAdmin()
+            // Вызываем глобальную функцию deleteReply, передавая timestamp в качестве уникального ID ответа
+            ? `<span onclick="deleteReply('${currentPostId}', '${resp.timestamp}')" style="color: #ff0000; margin-left: 15px; cursor: pointer;">[❌ Delete]</span>`
+            : '';
+        
+        const div = document.createElement("div");
+        div.className = "response-card";
+        div.innerHTML = `
+          <div>${resp.text}</div>
+          <div class="response-footer">
+            <span>💬 ${resp.user} | ${dateResp} ${timeResp}</span>
+            ${adminDeleteReplyBtn}
+          </div>
+        `;
+        responsesDiv.appendChild(div);
+      });
+    }
+
+    function openReply() {
+      document.getElementById("popupBg").style.display = "flex";
+      document.getElementById("replyText").value = "";
+    }
+
+    function closePopup() {
+      document.getElementById("popupBg").style.display = "none";
+      document.getElementById("replyText").value = "";
+    }
+
+    async function submitReply() {
+      const text = document.getElementById("replyText").value.trim();
+      if (text.length < 5) return alert("Пожалуйста, напишите более развернутый ответ (минимум 5 символов).");
+      
+      const newReply = {
+          timestamp: Date.now(), 
+          text: text,
+          user: currentUser, // currentUser импортируется из script.js
+      };
+
+      // 1. Добавляем ответ в локальный массив текущего поста
+      if (currentPost) {
+          if (!currentPost.replies) currentPost.replies = []; 
+          currentPost.replies.push(newReply);
+      } else {
+          alert("Error: Post data is missing.");
+          return;
+      }
+
+      // 2. Отправляем обновленный пост на сервер Firebase для синхронизации
+      await updatePost(currentPostId, currentPost);
+
+      closePopup();
+      loadThread(); // Перезагружаем тему для отображения нового ответа
+    }
+
+    document.getElementById("popupBg").addEventListener("click", (e) => {
+      if (e.target.id === "popupBg") closePopup();
+    });
+
+    window.onload = loadThread;
+    
+    // Делаем функции доступными глобально для HTML
+    window.openReply = openReply;
+    window.submitReply = submitReply;
+    window.closePopup = closePopup;
+    window.loadThread = loadThread; // Для перезагрузки
+  </script>
+</body>
+</html>
