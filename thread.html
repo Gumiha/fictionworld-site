@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thread</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Georgia', serif;
+      background: linear-gradient(to bottom, #D070CE, #1A587E);
+      color: white;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .subheader {
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 16px;
+      color: #f0f0f0;
+    }
+
+    .post-block {
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 25px;
+      margin-bottom: 40px;
+      text-align: center;
+      font-size: 20px;
+      box-shadow: 0px 5px 20px rgba(0,0,0,0.3);
+    }
+    
+    .post-block p {
+        margin: 10px 0;
+    }
+
+    .responses {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .back-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+    .back-btn:hover {
+        background: rgba(255, 255, 255, 0.35);
+    }
+    
+    .add-reply-btn {
+      display: block;
+      width: 250px;
+      margin: 40px auto;
+      background: #D070CE;
+      border: none;
+      color: white;
+      padding: 12px 30px;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .add-reply-btn:hover {
+        background: #b05db3;
+    }
+    .add-reply-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
+    .response-card {
+      background: rgba(255,255,255,0.15);
+      padding: 15px 20px;
+      border-radius: 15px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .response-card:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    .response-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .response-footer span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .loading {
+      text-align: center;
+      font-size: 20px;
+      margin-top: 50px;
+    }
+
+    .popup-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .popup {
+      background: white;
+      color: #1A587E;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 400px;
+      width: 85%;
+      text-align: center;
+      box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .popup h3 {
+      margin-bottom: 15px;
+      font-size: 22px;
+    }
+
+    .popup textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-family: 'Georgia', serif;
+      resize: none;
+    }
+
+    .popup button {
+      margin-top: 15px;
+      background: #D070CE;
+      border: none;
+      color: white;
+      padding: 10px 25px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .popup button:hover {
+      background: #b05db3;
+    }
+
+    .popup button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: scale(0.95);}
+      to {opacity: 1; transform: scale(1);}
+    }
+
+    .delete-btn {
+      background: #ff4444;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      margin-left: 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .delete-btn:hover {
+      background: #cc0000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button class="back-btn" onclick="window.location.href='forum.html'">← Back to Forum</button>
+
+    <h1>THREAD</h1>
+    <div class="subheader">Read and reply to this imagination</div>
+
+    <div class="post-block" id="postBlock">
+      <div class="loading">Loading post...</div>
+    </div>
+
+    <button class="add-reply-btn" id="addReplyBtn" onclick="openReply()">Add your answer</button>
+
+    <div class="responses" id="responses">
+      <div class="loading">Loading replies...</div>
+    </div>
+  </div>
+
+  <div class="popup-bg" id="popupBg">
+    <div class="popup">
+      <h3>Add your reply</h3>
+      <textarea id="replyText" placeholder="Write your reply..."></textarea>
+      <br>
+      <button id="submitBtn" onclick="submitReply()">Submit</button>
+    </div>
+  </div>
+
+  <!-- Подключаем Firebase Config -->
+  <script type="module" src="firebase-config.js"></script>
+  
+  <script type="module">
+    let currentPost = null;
+    let currentPostId = new URLSearchParams(window.location.search).get('id');
+    let replies = [];
+
+    async function loadThread() {
+      if (!currentPostId) {
+        alert("Error: Post ID not found. Redirecting to forum.");
+        window.location.href = 'forum.html';
+        return;
+      }
+      
+      try {
+        // Загружаем пост из Firebase
+        currentPost = await window.firebaseDB.loadPostById(currentPostId);
+
+        if (!currentPost) {
+          alert("Error: Post not found. Redirecting to forum.");
+          window.location.href = 'forum.html';
+          return;
+        }
+
+        // Рендерим основной пост
+        const postBlock = document.getElementById("postBlock");
+        const date = new Date(currentPost.timestamp).toLocaleDateString();
+        const time = new Date(currentPost.timestamp).toLocaleTimeString();
+        const replyCount = currentPost.replyCount || 0;
+        
+        // Кнопка удаления для админа
+        const isAdminUser = window.firebaseDB.isAdmin();
+        const adminDeletePostBtn = isAdminUser
+            ? `<button class="delete-btn" onclick="handleDeletePost()">Delete Post</button>` 
+            : '';
+
+        postBlock.innerHTML = `
+          <p style="font-size:24px;"><strong>${currentPost.question}</strong></p>
+          <p>${currentPost.answer}</p>
+          <p style="font-size:14px; color:#f0f0f0;">- ${currentPost.user} | ${date} ${time} | ${replyCount} answers ${adminDeletePostBtn}</p>
+        `;
+
+        // Загружаем ответы
+        await loadRepliesForPost();
+        
+      } catch (error) {
+        console.error("Error loading thread:", error);
+        document.getElementById("postBlock").innerHTML = '<p style="color: #ff6b6b;">Error loading post. Please try again.</p>';
+      }
+    }
+
+    async function loadRepliesForPost() {
+      const responsesDiv = document.getElementById("responses");
+      
+      try {
+        replies = await window.firebaseDB.loadReplies(currentPostId);
+        
+        responsesDiv.innerHTML = '';
+        
+        if (replies.length === 0) {
+          responsesDiv.innerHTML = '<p style="text-align:center; color:#f0f0f0;">No replies yet. Be the first to reply!</p>';
+          return;
+        }
+
+        const isAdminUser = window.firebaseDB.isAdmin();
+
+        replies.forEach(resp => {
+          const dateResp = new Date(resp.timestamp).toLocaleDateString();
+          const timeResp = new Date(resp.timestamp).toLocaleTimeString();
+          
+          const adminDeleteReplyBtn = isAdminUser
+              ? `<span onclick="handleDeleteReply('${resp.id}')" style="color: #ff0000; margin-left: 15px; cursor: pointer;">[✖ Delete]</span>`
+              : '';
+          
+          const div = document.createElement("div");
+          div.className = "response-card";
+          div.innerHTML = `
+            <div>${resp.text}</div>
+            <div class="response-footer">
+              <span>💬 ${resp.user} | ${dateResp} ${timeResp}</span>
+              ${adminDeleteReplyBtn}
+            </div>
+          `;
+          responsesDiv.appendChild(div);
+        });
+      } catch (error) {
+        console.error("Error loading replies:", error);
+        responsesDiv.innerHTML = '<p style="text-align:center; color: #ff6b6b;">Error loading replies.</p>';
+      }
+    }
+
+    function openReply() {
+      document.getElementById("popupBg").style.display = "flex";
+      document.getElementById("replyText").value = "";
+    }
+
+    function closePopup() {
+      document.getElementById("popupBg").style.display = "none";
+      document.getElementById("replyText").value = "";
+    }
+
+    async function submitReply() {
+      const text = document.getElementById("replyText").value.trim();
+      if (text.length < 5) {
+        alert("Please write a more detailed reply (minimum 5 characters).");
+        return;
+      }
+      
+      const submitBtn = document.getElementById("submitBtn");
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Sending...";
+      
+      try {
+        await window.firebaseDB.addReply(currentPostId, text);
+        
+        closePopup();
+        await loadThread(); // Перезагружаем тему
+        
+      } catch (error) {
+        console.error("Error submitting reply:", error);
+        alert("Error sending your reply. Please try again.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Submit";
+      }
+    }
+
+    async function handleDeletePost() {
+      if (!window.firebaseDB.isAdmin()) {
+        alert("No admin rights to delete post.");
+        return;
+      }
+      if (!confirm("ARE YOU SURE? Deleting the post is irreversible.")) {
+        return;
+      }
+      
+      try {
+        await window.firebaseDB.deletePost(currentPostId);
+        alert("Post deleted!");
+        window.location.href = 'forum.html';
+      } catch (error) {
+        console.error("Error deleting post:", error);
+        alert("Error deleting post. Please try again.");
+      }
+    }
+
+    async function handleDeleteReply(replyId) {
+      if (!window.firebaseDB.isAdmin()) {
+        alert("No admin rights to delete reply.");
+        return;
+      }
+      if (!confirm("ARE YOU SURE? Deleting the reply is irreversible.")) {
+        return;
+      }
+      
+      try {
+        await window.firebaseDB.deleteReply(replyId, currentPostId);
+        alert("Reply deleted!");
+        await loadThread(); // Перезагружаем тему
+      } catch (error) {
+        console.error("Error deleting reply:", error);
+        alert("Error deleting reply. Please try again.");
+      }
+    }
+
+    document.getElementById("popupBg").addEventListener("click", (e) => {
+      if (e.target.id === "popupBg") closePopup();
+    });
+
+    // Делаем функции глобальными
+    window.openReply = openReply;
+    window.submitReply = submitReply;
+    window.handleDeletePost = handleDeletePost;
+    window.handleDeleteReply = handleDeleteReply;
+
+    // Инициализация
+    window.addEventListener('load', () => {
+      loadThread();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forum</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Georgia', serif;
+      background: linear-gradient(to bottom, #70ACD0, #1A587E);
+      color: white;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 36px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .filters {
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 16px;
+    }
+
+    .filters span {
+      margin: 0 15px;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: all 0.3s ease;
+    }
+
+    .filters span:hover {
+      color: #FFD700;
+    }
+
+    .filters span.active {
+      color: #FFD700;
+      font-weight: bold;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 150px;
+      position: relative;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .card-text {
+      text-align: center;
+      font-size: 16px;
+      margin-bottom: 15px;
+      word-wrap: break-word;
+    }
+    
+    .card-text strong {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 18px;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      align-items: center;
+    }
+
+    .card-footer span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .loading {
+      text-align: center;
+      font-size: 20px;
+      margin-top: 100px;
+    }
+
+    .popup-bg {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Read and respond to other imaginations</h1>
+    <div class="filters">
+      <span class="active" onclick="filterCards('newest')">newest</span>
+      <span onclick="filterCards('most')">most replied</span>
+      <span onclick="filterCards('random')">random</span>
+    </div>
+    <div class="grid" id="cardGrid">
+      <div class="loading">Loading posts...</div>
+    </div>
+  </div>
+
+  <div class="popup-bg" id="popupBg">
+    <div class="popup">
+      <h3>Reply</h3>
+      <textarea id="replyText" placeholder="Write your reply..."></textarea>
+      <br>
+      <button onclick="submitReply()">Submit</button>
+    </div>
+  </div>
+
+  <!-- Подключаем Firebase Config -->
+  <script type="module" src="firebase-config.js"></script>
+
+  <script type="module">
+    let currentSortType = 'newest';
+
+    async function loadCards(sortType = 'newest') {
+      currentSortType = sortType;
+      
+      // Обновляем активный фильтр
+      document.querySelectorAll('.filters span').forEach(span => {
+        span.classList.remove('active');
+      });
+      event?.target?.classList.add('active');
+      
+      const grid = document.getElementById("cardGrid");
+      grid.innerHTML = '<div class="loading">Loading posts...</div>';
+      
+      try {
+        // Загружаем посты из Firebase
+        const data = await window.firebaseDB.loadPosts(sortType);
+        
+        grid.innerHTML = "";
+        
+        if (data.length === 0) {
+          grid.innerHTML = '<p style="text-align:center; margin-top: 50px;">There are no answers yet. Be the first on the <a href="questions.html" style="color:#FFD700;">"Choose a question"</a> page!</p>';
+          return;
+        }
+        
+        data.forEach(post => {
+          const replyCount = post.replyCount || 0;
+          const shortAnswer = post.answer.length > 120 ? post.answer.substring(0, 120) + '...' : post.answer;
+          
+          const div = document.createElement("div");
+          div.className = "card";
+          div.onclick = () => window.location.href = `thread.html?id=${post.id}`;
+          
+          div.innerHTML = `
+            <div class="card-text"><strong>${post.question}</strong><br>${shortAnswer}</div>
+            <div class="card-footer">
+              <span>💬 ${replyCount} responses</span>
+              <span style="cursor:pointer;" onclick="event.stopPropagation(); window.location.href = 'thread.html?id=${post.id}'">→ View Thread</span>
+            </div>
+          `;
+          grid.appendChild(div);
+        });
+      } catch (error) {
+        console.error("Error loading posts:", error);
+        grid.innerHTML = '<p style="text-align:center; margin-top: 50px; color: #ff6b6b;">Error loading posts. Please refresh the page.</p>';
+      }
+    }
+
+    function filterCards(type) {
+      loadCards(type);
+    }
+
+    // Делаем функции глобальными
+    window.filterCards = filterCards;
+    window.loadCards = loadCards;
+
+    // Инициализация
+    window.addEventListener('load', () => {
+      loadCards('newest');
+    });
+  </script>
+</body>
+</html>
