@@ -186,12 +186,16 @@
     </div>
   </div>
 
-  <!-- Подключаем Firebase Config -->
-  <script src="firebase-config.js"></script>
-  
-  <script type="module">
+<!-- Подключаем Firebase Config (без type="module") -->
+<script src="firebase-config.js"></script>
+
+<script>
+  // Ждём полной загрузки страницы
+  window.addEventListener("DOMContentLoaded", () => {
+
     let selectedQuestion = "";
 
+    // Открыть popup с выбранным вопросом
     function openPopup(question) {
       selectedQuestion = question;
       document.getElementById("popupQuestion").innerText = question;
@@ -199,30 +203,43 @@
       document.getElementById("popupBg").style.display = "flex";
     }
 
+    // Закрыть popup
     function closePopup() {
       document.getElementById("popupBg").style.display = "none";
     }
 
+    // Отправка ответа
     async function sendAnswer() {
       const text = document.getElementById("userAnswer").value.trim();
+
       if (text.length < 5) {
         alert("Please write a more detailed answer (minimum 5 characters).");
         return;
       }
-      
+
       const sendBtn = document.getElementById("sendBtn");
       sendBtn.disabled = true;
       sendBtn.innerText = "Sending...";
-      
+
       try {
-        // Используем Firebase функцию для создания поста
+        // Проверяем, что firebaseDB уже загружен
+        if (!window.firebaseDB || !window.firebaseDB.createPost) {
+          alert("Database is not ready. Please try again in a moment.");
+          sendBtn.disabled = false;
+          sendBtn.innerText = "Send";
+          return;
+        }
+
+        // Создание поста в Firebase
         await window.firebaseDB.createPost(selectedQuestion, text);
-        
+
+        // Очистка textarea и закрытие popup
         document.getElementById("userAnswer").value = "";
         closePopup();
-        
-        // Перенаправляем на страницу форума
-        window.location.href = 'forum.html';
+
+        // Перенаправление на страницу форума
+        window.location.href = "forum.html";
+
       } catch (error) {
         console.error("Error sending answer:", error);
         alert("Error sending your answer. Please try again.");
@@ -231,13 +248,23 @@
       }
     }
 
+    // Закрытие popup при клике вне окна
     document.getElementById("popupBg").addEventListener("click", (e) => {
       if (e.target.id === "popupBg") closePopup();
     });
 
-    // Делаем функции глобальными
+    // Привязываем кнопки через addEventListener вместо onclick
+    const sendBtn = document.getElementById("sendBtn");
+    if (sendBtn) {
+      sendBtn.addEventListener("click", sendAnswer);
+    }
+
+    // Делаем функции глобальными (если нужны в HTML)
     window.openPopup = openPopup;
     window.sendAnswer = sendAnswer;
-  </script>
+
+  });
+</script>
+  
 </body>
 </html>
