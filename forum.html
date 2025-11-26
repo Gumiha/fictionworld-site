@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forum</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Georgia', serif;
+      background: linear-gradient(to bottom, #70ACD0, #1A587E);
+      color: white;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 36px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .filters {
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 16px;
+    }
+
+    .filters span {
+      margin: 0 15px;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: all 0.3s ease;
+    }
+
+    .filters span:hover {
+      color: #FFD700;
+    }
+
+    .filters span.active {
+      color: #FFD700;
+      font-weight: bold;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 200px;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-5px);
+    }
+
+    .card-text {
+      text-align: left;
+      font-size: 16px;
+      margin-bottom: 15px;
+      word-wrap: break-word;
+      line-height: 1.5;
+    }
+    
+    .card-text strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 20px;
+      color: #FFD700;
+      text-align: center;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      align-items: center;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.3);
+    }
+
+    .card-footer span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .loading {
+      text-align: center;
+      font-size: 20px;
+      margin-top: 100px;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.25);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button class="back-btn" onclick="window.location.href='questions.html'">← Add your story</button>
+    
+    <h1>Read other imaginations</h1>
+    <div class="filters">
+      <span class="active" onclick="filterCards('newest')">newest</span>
+      <span onclick="filterCards('random')">random</span>
+    </div>
+    <div class="grid" id="cardGrid">
+      <div class="loading">Loading posts...</div>
+    </div>
+  </div>
+
+  <script src="google-sheets.js"></script>
+
+  <script>
+    let currentSortType = 'newest';
+
+    async function loadCards(sortType = 'newest') {
+      currentSortType = sortType;
+      
+      // Обновляем активный фильтр
+      document.querySelectorAll('.filters span').forEach(span => {
+        span.classList.remove('active');
+      });
+      if (event && event.target) {
+        event.target.classList.add('active');
+      }
+      
+      const grid = document.getElementById("cardGrid");
+      grid.innerHTML = '<div class="loading">Loading posts...</div>';
+      
+      try {
+        const data = await window.sheetsDB.loadPosts(sortType);
+        
+        grid.innerHTML = "";
+        
+        if (data.length === 0) {
+          grid.innerHTML = '<p style="text-align:center; margin-top: 50px;">There are no answers yet. Be the first on the <a href="questions.html" style="color:#FFD700;">"Choose a question"</a> page!</p>';
+          return;
+        }
+        
+        data.forEach(post => {
+          const date = new Date(post.timestamp).toLocaleDateString();
+          const time = new Date(post.timestamp).toLocaleTimeString();
+          
+          const div = document.createElement("div");
+          div.className = "card";
+          
+          div.innerHTML = `
+            <div class="card-text">
+              <strong>${post.question}</strong>
+              ${post.answer}
+            </div>
+            <div class="card-footer">
+              <span>👤 ${post.user}</span>
+              <span>🕐 ${date} ${time}</span>
+            </div>
+          `;
+          grid.appendChild(div);
+        });
+      } catch (error) {
+        console.error("Error loading posts:", error);
+        grid.innerHTML = '<p style="text-align:center; margin-top: 50px; color: #ff6b6b;">Error loading posts. Please refresh the page.</p>';
+      }
+    }
+
+    function filterCards(type) {
+      loadCards(type);
+    }
+
+    window.filterCards = filterCards;
+    window.loadCards = loadCards;
+
+    window.addEventListener('load', () => {
+      loadCards('newest');
+    });
+  </script>
+</body>
+</html>
